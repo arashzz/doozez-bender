@@ -1,17 +1,28 @@
 const transactionSubject = require('../provider/transaction-subject-provider'),
     jobSubject = require('../provider/job-subject-provider'),
     jobRepository = require('../repository/job-repository')
-    jobEnum = require('../enum/job-enums')
+    jobEnum = require('../enum/job-enums'),
+    uuid = require("uuid")
+
+exports.generateRawJob = function() {
+    return {
+        id: uuid.v4(),
+        resource: {
+            externalId: '',
+            type: ''
+        }
+    }
+}
 
 exports.subscribe = function() {
     transactionSubject.validatedSubject().subscribe({
-        next: (model) => createJob(model, jobEnum.status.PENDING),
+        next: (model) => createJob(model, jobEnum.status.IN_PROGRESS),
         error: (model) => createJob(model, jobEnum.status.FAILED)
     })
 
     transactionSubject.createResultSubject().subscribe({
         next: (trnx) => updateJob(trnx, jobEnum.status.SUCCESS),
-        error: (trnx, error) => updateJob(trnx.job_id, jobEnum.status.FAILED, error)
+        error: (trnx, error) => updateJob(trnx.externalId, jobEnum.status.FAILED, error)
     })
 }
 
@@ -30,7 +41,7 @@ function updateJob(model, status, error) {
             $set: { status: status }
         }, 
         filter:{
-            'resource.external_id': model.external_id
+            'resource.externalId': model.externalId
         }
     })
     //TODO: error should be part of job

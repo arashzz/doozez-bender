@@ -1,13 +1,25 @@
 const transactionSubject = require('../provider/transaction-subject-provider'),
     transactionRepository = require('../repository/transaction-repository'),
     moment = require('moment'),
-    { map } = require('rxjs/operators')
+    { map } = require('rxjs/operators'),
+    uuid = require("uuid")
 
 exports.subscribe = function() {
     transactionSubject.validatedSubject().subscribe({
         next: (model) => createTransaction(model.data),
         //error: (model) => createTransaction(model.data)
     })
+}
+
+exports.generateRawTransaction = function() {
+    return {
+        username: null,
+        amount: null,
+        transactionDate: null,
+        commodityId: null,
+        externalId: uuid.v4(),
+        createdDate: null
+    }
 }
 
 exports.getTransactions = function(criteria) {
@@ -28,6 +40,6 @@ exports.getTransactions = function(criteria) {
 }
 
 function createTransaction(trnx) {
-    trnx.created_date = new Date().getTime()
+    trnx.createdDate = new Date().getTime()
     transactionSubject.createSubject().next(trnx)
 }

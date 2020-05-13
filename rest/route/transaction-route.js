@@ -1,6 +1,6 @@
 const routes = require("express").Router(),
     transactionSubject = require("../../core/provider/transaction-subject-provider"),
-    uuid = require("uuid"),
+    jobService = require("../../core/service/job-service"),
     transactionService = require('../../core/service/transaction-service'),
     jobEnums = require('../../core/enum/job-enums')
     
@@ -17,26 +17,24 @@ routes.get('/v1/transactions', function (req, res) {
 });
 
 routes.post("/v1/transactions", function(req, res) {
-    let jobId = uuid.v4()
-    let data = {}
+    let job = jobService.generateRawJob()
+    let trnx = transactionService.generateRawTransaction()
+    job.resource.externalId = trnx.externalId
+    job.resource.type = jobEnums.resourceType.TRANSACTION
     if(req.body) {
-        data = req.body
-        data.external_id = uuid.v4()
+        trnx.amount = req.body.amount
+        trnx.username = req.body.username
+        trnx.transactionDate = req.body.transactionDate
+        trnx.commodityId = req.body.commodityId
     }
     transactionSubject.validationSubject().next({ 
-        data: data,
-        job: {
-            id: jobId,
-            resource: {
-                external_id: data.external_id,
-                type: jobEnums.resourceType.TRANSACTION
-            }
-        }
+        data: trnx,
+        job: job
     })
     res.status(202)
     res.json({
         links: {
-            job: 'http://localhost:5000/api/v1/jobs/' + jobId
+            job: 'http://localhost:5000/api/v1/jobs/' + job.id
         }
     })
 })

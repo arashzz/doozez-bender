@@ -13,6 +13,7 @@ exports.subscribe = function() {
 }
 
 function save(job) {
+    // console.log('--job save: ' + JSON.stringify(job))
     let collection = dbClient.getCollection(collectionName)
     collection.insertOne(job)
 }
@@ -27,6 +28,7 @@ function update(job, filter) {
             }
         },
         error: error => {
+            console.log(error)
             //TODO: log the error
             //log the filter & updating fields
         }

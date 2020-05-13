@@ -4,7 +4,7 @@ const resourceType = {
 
 const status = {
     FAILED: 'failed',
-    PENDING: 'pending',
+    IN_PROGRESS: 'in_progress',
     SUCCESS: 'successful'
 }
 

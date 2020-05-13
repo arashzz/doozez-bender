@@ -15,11 +15,9 @@ function save(trnx) {
     let collection = dbClient.getCollection(collectionName)
     from(collection.insertOne(trnx)).subscribe({
         next: res => {
-            console.log('---ok')
             transactionSubject.createResultSubject().next(trnx)
         },
         error: err => {
-            console.log('---error')
             transactionSubject.createResultSubject().error(trnx)
             //TODO: error logging with job id !!!
         }
@@ -27,8 +25,6 @@ function save(trnx) {
 }
 
 exports.findAll = function(filter) {
-    console.log('---findAll')
-    console.log(filter)
     let collection = dbClient.getCollection(collectionName)
     return from(collection.find(filter).toArray())
 }
