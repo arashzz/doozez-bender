@@ -5,10 +5,6 @@ const routes = require("express").Router(),
     jobEnums = require('../../core/enum/job-enums')
     
 
-// routes.get('/v1/transactions/:id', function (req, res) {
-//     res.json(trnx_service.getTransaction(req.params.id))
-// });
-
 routes.get('/v1/transactions', function (req, res) {
     transactionService.getTransactions(req.query).subscribe(data => {
         res.json({ transactions: data })

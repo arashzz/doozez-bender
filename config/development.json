@@ -1,0 +1,8 @@
+{
+    "db": {
+        "host": "mongodb://mongo:27017/"
+    },
+    "logging": {
+        "level": "info"
+    }
+}

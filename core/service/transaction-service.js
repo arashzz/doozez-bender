@@ -2,13 +2,14 @@ const transactionSubject = require('../provider/transaction-subject-provider'),
     transactionRepository = require('../repository/transaction-repository'),
     moment = require('moment'),
     { map } = require('rxjs/operators'),
-    uuid = require("uuid")
+    uuid = require("uuid"),
+    logger = require('../service/logger-service').logger
 
 exports.subscribe = function() {
     transactionSubject.validatedSubject().subscribe({
-        next: (model) => createTransaction(model.data),
-        //error: (model) => createTransaction(model.data)
+        next: (model) => createTransaction(model.data)
     })
+    logger.log('debug', 'subscribed to subject [validatedSubject]')
 }
 
 exports.generateRawTransaction = function() {
@@ -23,6 +24,7 @@ exports.generateRawTransaction = function() {
 }
 
 exports.getTransactions = function(criteria) {
+    logger.log('debug', 'getTransactions is called with criteria %s', criteria)
     filter = {}
     if(criteria) {
         if(criteria.commodities) {
@@ -40,6 +42,7 @@ exports.getTransactions = function(criteria) {
 }
 
 function createTransaction(trnx) {
+    logger.log('debug', 'createTransaction is called with transaction data %s', trnx)
     trnx.createdDate = new Date().getTime()
     transactionSubject.createSubject().next(trnx)
 }

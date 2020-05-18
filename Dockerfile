@@ -1,11 +1,10 @@
-FROM ubuntu:18.04
+# FROM node:latest
 
-RUN mkdir -p "/mongodb/db"
-RUN apt-get update && \
-    apt-get install -y wget && \
-    apt-get install -y gnupg && \
-    wget -qO - https://www.mongodb.org/static/pgp/server-4.2.asc | apt-key add - && \
-    echo "deb [ arch=amd64 ] https://repo.mongodb.org/apt/ubuntu bionic/mongodb-org/4.2 multiverse" | tee /etc/apt/sources.list.d/mongodb-org-4.2.list && \
-    apt-get update && \
-    apt-get install -y mongodb-org
-# RUN service mongod start 
+FROM node:latest
+RUN mkdir -p /usr/src/app
+WORKDIR /usr/src/app
+COPY package.json /usr/src/app/
+RUN npm install
+COPY . /usr/src/app
+EXPOSE 4000
+CMD [ "npm", "start" ]

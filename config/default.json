@@ -1,0 +1,15 @@
+{
+    "app": {
+        "port": 5100
+    },
+    "db": {
+        "host": "mongodb://localhost:27017/",
+        "user": "",
+        "password": "",
+        "dbName": "doozezTransaction"
+    },
+    "logging": {
+        "level": "debug",
+        "exitOnError": false
+    }
+}

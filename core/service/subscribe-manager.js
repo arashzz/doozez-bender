@@ -1,12 +1,13 @@
 
-const jobService =  require('./job-service')
-const jobRepository = require('../repository/job-repository')
-const transactionService = require('./transaction-service')
-const transactionValidator = require('../validation/transaction-validation')
-const transactionRepository = require('../repository/transaction-repository')
+const jobService =  require('./job-service'),
+    jobRepository = require('../repository/job-repository'),
+    transactionService = require('./transaction-service'),
+    transactionValidator = require('../validation/transaction-validation'),
+    transactionRepository = require('../repository/transaction-repository'),
+    logger = require('../service/logger-service').logger
 
 exports.init = function() {
-    console.log('initiating subjects')
+    logger.info('initiating subjects and their subscriptions')
     jobService.subscribe()
     transactionService.subscribe()
     transactionValidator.subscribe()
