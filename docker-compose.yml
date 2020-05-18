@@ -1,13 +1,13 @@
 version: "2.2"
 services:
   app:
-    container_name: doozez-trnx
+    container_name: doozez-bender
     environment:
       - NODE_ENV=development
     restart: always
-    build: .
+    image: arashmoeenj/doozez-bender
     ports:
-      - "4000:4000"
+      - "5000:5000"
     links:
       - mongo
   mongo:
