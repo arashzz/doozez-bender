@@ -1,37 +1,52 @@
-const routes = require("express").Router(),
-    transactionSubject = require("../../core/provider/transaction-subject-provider"),
-    jobService = require("../../core/service/job-service"),
-    transactionService = require('../../core/service/transaction-service'),
-    jobEnums = require('../../core/enum/job-enums')
-    
+const routes = require('express').Router(),
+    transactionSubject = require('../../core/provider/transaction-subject-provider'),
+    jobSubject = require('../../core/provider/job-subject-provider'),
+    jobService = require('../../core/service/job-service'),
+    transactionService = require('../../core/service/transaction-service')
+
 
 routes.get('/v1/transactions', function (req, res) {
-    transactionService.getTransactions(req.query).subscribe(data => {
-        res.json({ transactions: data })
-        res.status(200)
+    let job = jobService.getRawJob()
+    jobSubject.create().next(job)
+    let dataModel = {
+        jobId: job.id,
+        filter: req.query
+    }
+    transactionSubject.validateGet().next(dataModel)
+    res.status(202)
+    res.json({
+        jobId: job.id
     })
 });
 
-routes.post("/v1/transactions", function(req, res) {
-    let job = jobService.generateRawJob()
-    let trnx = transactionService.generateRawTransaction()
-    job.resource.externalId = trnx.externalId
-    job.resource.type = jobEnums.resourceType.TRANSACTION
+routes.post('/v1/transactions', function(req, res) {
+    let transaction = transactionService.getRawTransaction()
     if(req.body) {
-        trnx.amount = req.body.amount
-        trnx.username = req.body.username
-        trnx.transactionDate = req.body.transactionDate
-        trnx.commodityId = req.body.commodityId
+        transaction.amount = req.body.amount
+        transaction.username = req.body.username
+        transaction.transactionDate = req.body.transactionDate
+        transaction.commodityId = req.body.commodityId
     }
-    transactionSubject.validationSubject().next({ 
-        data: trnx,
-        job: job
-    })
+    let jobCreationModel = {
+        job: jobService.getRawJob(),
+        task: {
+            name: 'transactionSubject.validatePost',
+            subject: transactionSubject.validatePost(),
+            data: transaction
+        }
+    }
+
+    jobSubject.create().next(jobCreationModel)
+   
+    // transactionSubject.validatePost().next({
+    //     jobId: job.id,
+    //     transaction: transaction
+    // })
+
+
     res.status(202)
     res.json({
-        links: {
-            job: 'http://localhost:5000/api/v1/jobs/' + job.id
-        }
+        jobId: jobCreationModel.job.id
     })
 })
 

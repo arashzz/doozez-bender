@@ -1,42 +1,53 @@
 const moment = require('moment'),
-    transactionSubProvider = require("../provider/transaction-subject-provider"),
-    logger = require('../service/logger-service').logger
+    transactionSubject = require("../provider/transaction-subject-provider"),
+    logger = require('../service/logger-service').logger,
+    namespace = 'core.validation.transaction-validation'
 
 exports.subscribe = function() {
-    transactionSubProvider.validationSubject().subscribe({
-        next: (model) => validateCreationModel(model)
+    transactionSubject.validatePost().subscribe({
+        next: (dataModel) => validateCreateModel(dataModel)
     })
-    logger.log('debug', 'subscribed to subject [validationSubject]')
+    logger.log('debug', '<%s> subscribed to subject [transactionSubject.validatePost]', namespace)
+    
+    transactionSubject.validateGet().subscribe({
+        next: (dataModel) => validateQueryModel(dataModel)
+    })
+    logger.log('debug', '<%s> subscribed to subject [transactionSubject.validatePost]', namespace)
 }
 
-function validateCreationModel(model) {
-    logger.log('debug', 'validateCreationModel with model %', model)
-    let data = model.data
-    logger.log('debug', 'validating data %', data)
-    model.validation = {
-        result: true,
-        reason: []
-    }
-    if(!data) {
-        model.validation.result = false
-        model.validation.reason.push("transaction model is null")
-    }
-    if(!data.commodityId) {
-        model.validation.result = false
-        model.validation.reason.push("commodity cannot be empty")
-    }
-    if(!data.amount || isNaN(data.amount) || data.amount <= 0) {
-        model.validation.result = false
-        model.validation.reason.push("transaction amount is invalid")
-    }
-    if(!data.transactionDate || !moment(data.transactionDate, "yyyy-MM-dd").isValid()) {
-        model.validation.result = false
-        model.validation.reason.push("transaction date is invalid")
-    }
-    if(model.validation.result) {
-        transactionSubProvider.validatedSubject().next(model)
+function validateQueryModel(dataModel) {
+    logger.log('debug', '<%s.%s> is called with dataModel %s', namespace, arguments.callee.name, dataModel.data)
+    let errors = []
+
+    if(errors.length == 0) {
+        transactionSubject.createFilter().next(dataModel)
     }
     else {
-        transactionSubProvider.validatedSubject().error(model)
+        dataModel.result = errors
+        transactionSubject.validateGet().error(dataModel)
+    }
+}
+
+function validateCreateModel(dataModel) {
+    logger.log('debug', '<%s.%s> is called with dataModel %s', namespace, arguments.callee.name, dataModel.data)
+    let errors = []
+    if(!dataModel.data) {
+        errors.push("transaction is null")
+    }
+    if(!dataModel.data.commodityId) {
+        errors.push("commodity cannot be empty")
+    }
+    if(!dataModel.data.amount || isNaN(dataModel.data.amount) || dataModel.data.amount <= 0) {
+        errors.push("transaction amount is invalid")
+    }
+    if(!dataModel.data.transactionDate || !moment(dataModel.data.transactionDate, "yyyy-MM-dd").isValid()) {
+        errors.push("transaction date is invalid")
+    }
+    if(errors.length == 0) {
+        transactionSubject.insert().next(dataModel)
+    }
+    else {
+        dataModel.result = errors
+        transactionSubject.validatePost().error(dataModel)
     }
 }

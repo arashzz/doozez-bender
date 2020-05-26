@@ -1,56 +1,85 @@
 const transactionSubject = require('../provider/transaction-subject-provider'),
     jobSubject = require('../provider/job-subject-provider'),
-    jobRepository = require('../repository/job-repository')
+    jobRepository = require('../repository/job-repository'),
     jobEnum = require('../enum/job-enums'),
     uuid = require("uuid"),
-    logger = require('./logger-service').logger
+    logger = require('./logger-service').logger,
+    namespace = 'core.service.job-service'
 
-exports.generateRawJob = function() {
+exports.getRawJob = function(resourceExternalId) {
+    //TODO: map 
     return {
         id: uuid.v4(),
-        resource: {
-            externalId: '',
-            type: ''
-        }
+        status: jobEnum.status.IN_PROGRESS,
+        result: null,
+        createdAt: new Date().getTime(),
+        updatedAt: new Date().getTime()
     }
 }
 
 exports.subscribe = function() {
-    transactionSubject.validatedSubject().subscribe({
-        next: (model) => createJob(model, jobEnum.status.IN_PROGRESS),
-        error: (model) => createJob(model, jobEnum.status.FAILED)
-    })
-    logger.log('debug', 'subscribed to subject [validatedSubject]')
 
-    transactionSubject.createResultSubject().subscribe({
-        next: (trnx) => updateJob(trnx, jobEnum.status.SUCCESS),
-        error: (trnx, error) => updateJob(trnx.externalId, jobEnum.status.FAILED, error)
+    jobSubject.runTask().subscribe({
+        next: (jobCreationModel) => runTask(jobCreationModel)
     })
-    logger.log('debug', 'subscribed to subject [createResultSubject]')
+    logger.log('debug', '<%s> subscribed to [jobSubject.runTask]', namespace)
+
+    transactionSubject.validateGet().subscribe({
+        error: (dataModel) => update(dataModel, false)
+    })
+    logger.log('debug', '<%s> subscribed to [jobSubject.validateGet]', namespace)
+
+    transactionSubject.validatePost().subscribe({
+        error: (dataModel) => update(dataModel, false)
+    })
+    logger.log('debug', '<%s> subscribed to [jobSubject.validatePost]', namespace)
+
+    transactionSubject.insert().subscribe({
+        error: (dataModel) => update(dataModel, false)
+    })
+    logger.log('debug', '<%s> subscribed to [jobSubject.insert]', namespace)
+
+    transactionSubject.find().subscribe({
+        error: (dataModel) => update(dataModel, false)
+    })
+    logger.log('debug', '<%s> subscribed to [jobSubject.find]', namespace)
+    
+    jobSubject.updateResult().subscribe({
+        next: (dataModel) => update(dataModel, true)
+    })
+    logger.log('debug', '<%s> subscribed to [jobSubject.updateResult]', namespace)
 }
 
 exports.getJobById = function(id) {
-    logger.log('debug', 'getJobById is called with the id [%s]', id)
+    logger.log('debug', '<%s.%s> is called with the id [%s]',namespace, arguments.callee.name, id)
     return jobRepository.find({id: id})
 }
 
-function createJob(model, status) {
-    logger.log('debug', 'createJob is called with the model %s and status %s', model, status)
-    model.job.status = status
-    jobSubject.createSubject().next(model.job)
+function runTask(jobCreationModel) {
+    logger.log('debug', '<%s.%s> is called to run task [%s] with data %s', 
+        namespace, arguments.callee.name, jobCreationModel.task.name, jobCreationModel.task.data)
+    jobCreationModel.task.subject.next({
+        jobId: jobCreationModel.job.id,
+        data: jobCreationModel.task.data
+    })
 }
 
-function updateJob(model, status, error) {
-    logger.log('debug', 'updateJob is called with job data %s', model)
-    jobSubject.updateSubject().next({
-        model:{
-            $set: { status: status }
-        }, 
-        filter:{
-            'resource.externalId': model.externalId
+function update(dataModel, success) {
+    logger.log('debug', '<%s.%s> is called with status of %s for job id %s', namespace, arguments.callee.name, success, dataModel.jobId)
+    let status = jobEnum.status.SUCCESS
+    if(!success) {
+        status = jobEnum.status.FAILED
+    }
+    jobSubject.update().next({
+        filter: {
+            id: dataModel.jobId
+        },
+        update: {
+            $set: {
+                status: status,
+                result: dataModel.result,
+                updatedAt: new Date().getTime()
+            }    
         }
     })
-    if(error) {
-        logger
-    }
 }

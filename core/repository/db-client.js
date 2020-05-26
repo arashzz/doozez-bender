@@ -4,13 +4,12 @@ const  { from } = require('rxjs'),
     dbConfig = require('config').get('db'),
     logger = require('../service/logger-service').logger
 
-const collections = {
-    TRANSACTION: 'transaction',
-    JOB: 'job'
+this._db
+exports.init = function() {
+    connect()
 }
 
-this._db
-exports.connect = function() {
+function connect() {
     logger.info('connecting to database...')
     from(mongo.connect(dbConfig.host + dbConfig.dbName)).subscribe({
         next: client => {

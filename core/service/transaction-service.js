@@ -1,48 +1,73 @@
 const transactionSubject = require('../provider/transaction-subject-provider'),
-    transactionRepository = require('../repository/transaction-repository'),
-    moment = require('moment'),
-    { map } = require('rxjs/operators'),
+    jobSubject = require('../provider/job-subject-provider'),
     uuid = require("uuid"),
-    logger = require('../service/logger-service').logger
+    { from } = require('rxjs'),
+    { map } = require('rxjs/operators'),
+    logger = require('../service/logger-service').logger,
+    namespace = 'core.service.transaction-service'
 
 exports.subscribe = function() {
-    transactionSubject.validatedSubject().subscribe({
-        next: (model) => createTransaction(model.data)
+    transactionSubject.enrich().subscribe({
+        next: (dataModel) => enrichTransaction(dataModel)
     })
-    logger.log('debug', 'subscribed to subject [validatedSubject]')
+    logger.log('debug', '<%s> subscribed to subject [transactionSubject.enrich]', namespace)
+
+    transactionSubject.enrichList().subscribe({
+        next: (dataModel) => enrichTransactions(dataModel)
+    })
+    logger.log('debug', '<%s> subscribed to subject [transactionSubject.enrichList]', namespace)
+
+    transactionSubject.createFilter().subscribe({
+        next: (dataModel) => createFilter(dataModel)
+    })
+    logger.log('debug', '<%s> subscribed to subject [transactionSubject.createFilter]', namespace)
 }
 
-exports.generateRawTransaction = function() {
+exports.getRawTransaction = function() {
     return {
         username: null,
         amount: null,
         transactionDate: null,
         commodityId: null,
-        externalId: uuid.v4(),
-        createdDate: null
+        createdAt: new Date().getTime(),
+        updatedAt: new Date().getTime()
     }
 }
 
-exports.getTransactions = function(criteria) {
-    logger.log('debug', 'getTransactions is called with criteria %s', criteria)
-    filter = {}
-    if(criteria) {
-        if(criteria.commodities) {
-            filter.commodityId = {
-                $in: criteria.commodities.split(',').map(Number)
-            }
-        }
-        if(criteria.username) {
-            filter.username = {
-                $eq: criteria.username
-            }
+function createFilter(dataModel) {
+    let filter = {
+        username: dataModel.data.username,
+        createdAt: {
+            $gt: parseInt(dataModel.data.from),
+            $lt: parseInt(dataModel.data.to)
         }
     }
-    return transactionRepository.findAll(filter)
+    if(dataModel.data.commodityId) {
+        filter.commodityId = commodityId
+    }
+    dataModel.data = filter
+    transactionSubject.find().next(dataModel)
 }
 
-function createTransaction(trnx) {
-    logger.log('debug', 'createTransaction is called with transaction data %s', trnx)
-    trnx.createdDate = new Date().getTime()
-    transactionSubject.createSubject().next(trnx)
+function enrichTransactions(dataModel) {
+    dataModel.result = []
+    from(dataModel.transactions).pipe(
+        map(it => toApiModel(it))
+    ).subscribe({
+        next: (it) => dataModel.result.push(it),
+        complete: () => jobSubject.updateResult().next(dataModel)
+    })
+}
+
+function enrichTransaction(dataModel) {
+    dataModel.result = toApiModel(dataModel.data)
+    jobSubject.updateResult().next(dataModel)
+}
+
+function toApiModel(transaction) {
+    return {
+        amount: transaction.amount,
+        transactionDate: transaction.transactionDate,
+        commodityId: transaction.commodityId
+    }
 }
