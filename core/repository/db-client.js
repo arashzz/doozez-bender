@@ -1,36 +1,38 @@
 const  { from } = require('rxjs'),
     { map } = require('rxjs/operators'),
-    mongo = require('mongodb'),
-    dbConfig = require('config').get('db'),
-    logger = require('../service/logger-service').logger
+    mongo = require('mongodb')
 
-this._db
-exports.init = function() {
-    connect()
+const { RESOLVER, Lifetime, InjectionMode } = require('awilix')
+
+class DbClient {
+    constructor({logger, config}) {
+        this.namespace = 'core.repository.db-client'
+        this.config = config
+        this.logger = logger;
+        this._db = undefined
+        this.connect()
+    }
+    connect() {
+        this.logger.info('connecting to database...')
+        from(mongo.connect(this.config.host + this.config.dbName)).subscribe({
+            next: client => {
+                this.logger.info('connected to database successfully')
+                this._db = client.db(this.config.dbName)
+            },
+            error: error => {
+                this.logger.error('failed to connect to database with error %s', error)
+            }
+        })
+    }
+    getCollection(name) {
+        this.logger.log('debug', 'getting collection %s', name)
+        return this._db.collection(name)
+    }
 }
 
-function connect() {
-    logger.info('connecting to database...')
-    from(mongo.connect(dbConfig.host + dbConfig.dbName)).subscribe({
-        next: client => {
-            logger.info('connected to database successfully')
-            this._db = client.db(dbConfig.dbName)
-        },
-        error: error => {
-            logger.error('failed to connect to database with error %s', error)
-        }
-    })
-}
+module.exports = DbClient
 
-exports.getDb = function() {
-    return this._db
+DbClient[RESOLVER] = {
+    lifetime: Lifetime.SINGLETON,
+    injectionMode: InjectionMode.PROXY
 }
-
-exports.getCollection = function(name) {
-    logger.log('debug', 'getting collection %s', name)
-    return this._db.collection(name)
-}
-
-// exports.disconnect = function() {
-//     // this._db.disconnect()
-// }

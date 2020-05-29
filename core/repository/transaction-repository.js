@@ -1,58 +1,66 @@
-const transactionSubject = require("../provider/transaction-subject-provider"),
-    jobSubject = require('../provider/job-subject-provider'),
-    { from } = require('rxjs'),
-    dbClient = require('./db-client'),
-    collectionName = 'transaction',
-    logger = require('../service/logger-service').logger,
-    namespace = 'core.repository.transaction-repository'
+const { from } = require('rxjs'),
+    { RESOLVER, Lifetime, InjectionMode } = require('awilix')    
 
-exports.subscribe = function() {
-    transactionSubject.insert().subscribe({
-        next: (dataModel) => insert(dataModel)
-    })
-    logger.log('debug', '<%s> subscribed to subject [transactionSubject.insert]', namespace)
+class TransactionRepository {
+    constructor({ logger, dbClient, subjectProvider }) {
+        this.namespace = 'core.repository.transaction-repository'
+        this.collectionName = 'transaction'
+        this.logger = logger
+        this.dbClient = dbClient
+        this.subjectProvider = subjectProvider
+        this.subscribe()
+    }
+    subscribe() {
+        this.subjectProvider.transaction.insert().subscribe({
+            next: (dataModel) => this.insert(dataModel)
+        })
+        this.logger.log('debug', '<%s> subscribed to subject [subjectProvider.transaction.insert]', this.namespace)
 
-    transactionSubject.find().subscribe({
-        next: (dataModel) => find(dataModel)
-    })
-    logger.log('debug', '<%s> subscribed to subject [transactionSubject.find]', namespace)
-}
-
-function insert(dataModel) {
-    logger.log('debug', '<%s.%s> is called with model %s', namespace, arguments.callee.name, dataModel.data)
-    let collection = dbClient.getCollection(collectionName)
-    from(collection.insertOne(dataModel.data)).subscribe({
-        next: res => {
-            if(res.result.ok == 1) {
-                transactionSubject.enrich().next(dataModel)
-            }
-            else {
-                logger.log('debug', '<%s.%s> failed to save transaction model %s ', namespace, arguments.callee.name, dataModel.data)
+        this.subjectProvider.transaction.find().subscribe({
+            next: (dataModel) => this.find(dataModel)
+        })
+        this.logger.log('debug', '<%s> subscribed to subject [transactionSubject.find]', this.namespace)
+    }
+    insert(dataModel) {
+        this.logger.log('debug', '<%s.insert> is called with model %s', this.namespace, dataModel.data)
+        from(this.dbClient.getCollection(this.collectionName).insertOne(dataModel.data)).subscribe({
+            next: res => {
+                if(res.result.ok == 1) {
+                    this.subjectProvider.transaction.enrich().next(dataModel)
+                }
+                else {
+                    this.logger.log('debug', '<%s.insert> failed to save transaction model %s ', this.namespace, dataModel.data)
+                    dataModel.result = 'something unexpected happened while saving the transaction'
+                    this.subjectProvider.transaction.insert().error(dataModel)
+                }
+            },
+            error: err => {
+                this.logger.log('debug', '<%s.insert> failed to save transaction model %s with error %s', this.namespace, dataModel.data, err)
                 dataModel.result = 'something unexpected happened while saving the transaction'
-                transactionSubject.insert().error(dataModel)
+                this.subjectProvider.transaction.insert().error(dataModel)
             }
-        },
-        error: err => {
-            logger.log('debug', '<%s.%s> failed to save transaction model %s with error %s', namespace, arguments.callee.name, dataModel.data, err)
-            dataModel.result = 'something unexpected happened while saving the transaction'
-            transactionSubject.insert().error(dataModel)
-        }
-    })
+        })
+    }
+    find(dataModel) {
+        this.logger.log('debug', '<%s.find> is called with filter %s', this.namespace, dataModel.data)
+        from(this.dbClient.getCollection(this.collectionName).find(dataModel.data).toArray()).subscribe({
+            next: res => {
+                dataModel.data = res
+                this.subjectProvider.transaction.enrichList().next(dataModel)
+            },
+            error: err => {
+                this.logger.log('debug', '<%s.find> failed to find transactions with filter %s and jobId %s with error %s', 
+                    this.namespace, dataModel.data, dataModel.jobId, err)
+                dataModel.result = 'something unexpected happened while searching transactions'
+                this.subjectProvider.transaction.find().error(dataModel)
+            }
+        })
+    }
 }
 
-function find(dataModel) {
-    logger.log('debug', '%s.%s is called with filter %s', namespace, arguments.callee.name, dataModel.data)
-    let collection = dbClient.getCollection(collectionName)
-    from(collection.find(dataModel.data).toArray()).subscribe({
-        next: res => {
-            dataModel.datas = res
-            transactionSubject.enrichList().next(dataModel)
-        },
-        error: err => {
-            logger.log('debug', '<%s.%s> failed to find transactions with filter %s and jobId %s with error %s', 
-                namespace, arguments.callee.name, dataModel.data, dataModel.jobId, err)
-            dataModel.result = 'something unexpected happened while searching transactions'
-            transactionSubject.find().error(dataModel)
-        }
-    })
+module.exports = TransactionRepository
+
+TransactionRepository[RESOLVER] = {
+    lifetime: Lifetime.SINGLETON,
+    injectionMode: InjectionMode.PROXY
 }
