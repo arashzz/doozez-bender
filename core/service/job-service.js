@@ -1,56 +1,77 @@
-const transactionSubject = require('../provider/transaction-subject-provider'),
-    jobSubject = require('../provider/job-subject-provider'),
-    jobRepository = require('../repository/job-repository')
-    jobEnum = require('../enum/job-enums'),
-    uuid = require("uuid"),
-    logger = require('./logger-service').logger
+const jobEnum = require('../enum/job-enums')
+    
+const { RESOLVER, Lifetime, InjectionMode } = require('awilix')
+    
+class JobService {
+    constructor({ logger, subjectProvider, jobRepository, uuid }) {
+        this.logger = logger
+        this.subjectProvider = subjectProvider
+        this.jobRepository = jobRepository
+        this.uuid = uuid
+        this.namespace = 'core.service.job-service'
+        this.subscriptions = {}
+        this.subscribe()
+    }
+    subscribe() {
+        this.subscriptions['subjectProvider.job.runTask'] = this.subjectProvider.job.runTask().subscribe({
+            next: (jobCreationModel) => this.runTask(jobCreationModel)
+        })
+        this.logger.log('debug', '<%s> subscribed to [subjectProvider.job.runTask]', this.namespace)
 
-exports.generateRawJob = function() {
-    return {
-        id: uuid.v4(),
-        resource: {
-            externalId: '',
-            type: ''
+        this.subscriptions['subjectProvider.job.updateResult'] = this.subjectProvider.job.updateResult().subscribe({
+            next: (dataModel) => this.update(dataModel, dataModel.isError)
+        })
+        this.logger.log('debug', '<%s> subscribed to [subjectProvider.job.updateResult]', this.namespace)
+    }
+    unsubscribe() {
+        for(let key in this.subscriptions) {
+            this.subscriptions[key].unsubscribe()
+            this.logger.log('debug', '<%s> unsubscribed to [%s]', this.namespace, key)
         }
+    }
+    getRawJob() {
+        //TODO: map 
+        return {
+            id: this.uuid.v4(),
+            status: jobEnum.status.IN_PROGRESS,
+            result: undefined,
+            createdAt: new Date().getTime(),
+            updatedAt: new Date().getTime()
+        }   
+    }
+    runTask(jobCreationModel) {
+        this.logger.log('debug', '<%s.runTask> is called to run task [%s] with data %s', 
+            this.namespace, jobCreationModel.task.name, jobCreationModel.task.data)
+        jobCreationModel.task.subject.next({
+            jobId: jobCreationModel.job.id,
+            data: jobCreationModel.task.data
+        })
+    }
+    update(dataModel, isError) {
+        this.logger.log('debug', '<%s.update> is called with isError of %s for job id %s', 
+            this.namespace, isError, dataModel.jobId)
+        this.subjectProvider.job.update().next({
+            filter: {
+                id: dataModel.jobId
+            },
+            update: {
+                $set: {
+                    status: isError == true? jobEnum.status.FAILED: jobEnum.status.SUCCESS,
+                    result: dataModel.result,
+                    updatedAt: new Date().getTime()
+                }    
+            }
+        })
+    }
+    getJobById(id) {
+        this.logger.log('debug', '<%s.getJobById> is called with the id [%s]', this.namespace, id)
+        return this.jobRepository.find({id: id})
     }
 }
 
-exports.subscribe = function() {
-    transactionSubject.validatedSubject().subscribe({
-        next: (model) => createJob(model, jobEnum.status.IN_PROGRESS),
-        error: (model) => createJob(model, jobEnum.status.FAILED)
-    })
-    logger.log('debug', 'subscribed to subject [validatedSubject]')
+module.exports = JobService
 
-    transactionSubject.createResultSubject().subscribe({
-        next: (trnx) => updateJob(trnx, jobEnum.status.SUCCESS),
-        error: (trnx, error) => updateJob(trnx.externalId, jobEnum.status.FAILED, error)
-    })
-    logger.log('debug', 'subscribed to subject [createResultSubject]')
-}
-
-exports.getJobById = function(id) {
-    logger.log('debug', 'getJobById is called with the id [%s]', id)
-    return jobRepository.find({id: id})
-}
-
-function createJob(model, status) {
-    logger.log('debug', 'createJob is called with the model %s and status %s', model, status)
-    model.job.status = status
-    jobSubject.createSubject().next(model.job)
-}
-
-function updateJob(model, status, error) {
-    logger.log('debug', 'updateJob is called with job data %s', model)
-    jobSubject.updateSubject().next({
-        model:{
-            $set: { status: status }
-        }, 
-        filter:{
-            'resource.externalId': model.externalId
-        }
-    })
-    if(error) {
-        logger
-    }
+JobService[RESOLVER] = {
+    lifetime: Lifetime.SINGLETON,
+    injectionMode: InjectionMode.PROXY
 }

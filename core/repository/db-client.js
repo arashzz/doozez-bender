@@ -1,37 +1,46 @@
 const  { from } = require('rxjs'),
     { map } = require('rxjs/operators'),
-    mongo = require('mongodb'),
-    dbConfig = require('config').get('db'),
-    logger = require('../service/logger-service').logger
+    mongo = require('mongodb')
 
-const collections = {
-    TRANSACTION: 'transaction',
-    JOB: 'job'
-}
+const { RESOLVER, Lifetime, InjectionMode } = require('awilix')
 
-this._db
-exports.connect = function() {
-    logger.info('connecting to database...')
-    from(mongo.connect(dbConfig.host + dbConfig.dbName)).subscribe({
-        next: client => {
-            logger.info('connected to database successfully')
-            this._db = client.db(dbConfig.dbName)
-        },
-        error: error => {
-            logger.error('failed to connect to database with error %s', error)
+class DbClient {
+    constructor({logger, config}) {
+        this.namespace = 'core.repository.db-client'
+        this.config = config
+        this.logger = logger;
+        this._db = undefined
+        this.connect()
+    }
+    connect() {
+        let dbUrl = 'mongodb+srv://'
+        if(this.config.authRequired) {
+            dbUrl += `${this.config.username}:${this.config.password}@`
+        } 
+        dbUrl += `${this.config.host}/${this.config.dbName}`
+        if(this.config.connectOpts) {
+            dbUrl += this.config.connectOpts
         }
-    })
+        this.logger.info('connecting to database [%s] ...', this.config.host)
+        from(mongo.connect(dbUrl)).subscribe({
+            next: client => {
+                this.logger.info('connected to database successfully')
+                this._db = client.db(this.config.dbName)
+            },
+            error: error => {
+                this.logger.error('failed to connect to database with error %s', error)
+            }
+        })
+    }
+    getCollection(name) {
+        this.logger.log('debug', 'getting collection %s', name)
+        return this._db.collection(name)
+    }
 }
 
-exports.getDb = function() {
-    return this._db
-}
+module.exports = DbClient
 
-exports.getCollection = function(name) {
-    logger.log('debug', 'getting collection %s', name)
-    return this._db.collection(name)
+DbClient[RESOLVER] = {
+    lifetime: Lifetime.SINGLETON,
+    injectionMode: InjectionMode.PROXY
 }
-
-// exports.disconnect = function() {
-//     // this._db.disconnect()
-// }

@@ -4,18 +4,26 @@
   "description": "",
   "main": "app.js",
   "scripts": {
-    "start": "node app.js"
+    "start": "env NODE_ENV=development node app.js",
+    "test": "env NODE_ENV=test mocha"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "awilix": "^4.2.6",
+    "chai": "^4.2.0",
+    "chai-http": "^4.3.0",
     "config": "^3.3.1",
     "dotenv": "^8.2.0",
     "express": "^4.17.1",
+    "mocha": "^7.2.0",
+    "mock-require": "^3.0.3",
     "moment": "^2.25.3",
     "mongodb": "^3.5.7",
+    "rewire": "^5.0.0",
     "rxjs": "^6.5.5",
+    "supertest": "^4.0.2",
     "uuid": "^8.0.0",
     "winston": "^3.2.1"
   }

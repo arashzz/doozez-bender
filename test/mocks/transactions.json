@@ -1,0 +1,42 @@
+[
+    {
+        "username": "john.doe@example.com",
+        "amount": 100,
+        "transactionDate": 1590245639280,
+        "commodityId": 3,
+        "createdAt": 1590245639296,
+        "updatedAt": 1590245639296
+    },
+    {
+        "username": "john.doe@example.com",
+        "amount": 100,
+        "transactionDate": 1590245649280,
+        "commodityId": 3,
+        "createdAt": 1590245649296,
+        "updatedAt": 1590245649296
+    },
+    {
+        "username": "john.doe@example.com",
+        "amount": 52,
+        "transactionDate": 1590245647280,
+        "commodityId": 1,
+        "createdAt": 1590245647296,
+        "updatedAt": 1590245647296
+    },
+    {
+        "username": "john.doe@example.com",
+        "amount": 45,
+        "transactionDate": 1590245648280,
+        "commodityId": 1,
+        "createdAt": 1590245648296,
+        "updatedAt": 1590245648296
+    },
+    {
+        "username": "mary.anne@example.com",
+        "amount": 23,
+        "transactionDate": 1590245649180,
+        "commodityId": 2,
+        "createdAt": 1590245649196,
+        "updatedAt": 1590245649196
+    }
+]

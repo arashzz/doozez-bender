@@ -1,0 +1,67 @@
+{
+	"valid": {
+		"commodity": {
+			"name": "Household Goods and Services",
+			"has_priodic": true,
+			"external_id": "1",
+			"is_debit": true,
+			"is_credit": false
+		},
+		"amount": 111,
+		"type": "debit",
+		"transactionDate": "2020-11-11",
+		"username": "test@example.com"
+	},
+	"invalid_date": {
+		"commodity": {
+			"name": "Household Goods and Services",
+			"has_priodic": true,
+			"external_id": "1",
+			"is_debit": true,
+			"is_credit": false
+		},
+		"amount": 111,
+		"type": "debit",
+		"transactionDate": "11-11-2020",
+		"username": "test@example.com"
+	},
+	"invalid_username": {
+		"commodity": {
+			"name": "Household Goods and Services",
+			"has_priodic": true,
+			"external_id": "1",
+			"is_debit": true,
+			"is_credit": false
+		},
+		"amount": 111,
+		"type": "debit",
+		"transactionDate": "11-11-2020",
+		"username": ""
+	},
+	"invalid_amount": {
+		"commodity": {
+			"name": "Household Goods and Services",
+			"has_priodic": true,
+			"external_id": "1",
+			"is_debit": true,
+			"is_credit": false
+		},
+		"amount": "asda",
+		"type": "debit",
+		"transactionDate": "11-11-2020",
+		"username": ""
+	},
+	"invalid_type": {
+		"commodity": {
+			"name": "Household Goods and Services",
+			"has_priodic": true,
+			"external_id": "1",
+			"is_debit": true,
+			"is_credit": false
+		},
+		"amount": 111,
+		"type": "not_credit",
+		"transactionDate": "11-11-2020",
+		"username": ""
+	}
+}

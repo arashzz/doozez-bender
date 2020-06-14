@@ -5,7 +5,7 @@ services:
     environment:
       - NODE_ENV=development
     restart: always
-    image: arashmoeenj/doozez-bender
+    image: doozez-bender:202005301236
     ports:
       - "5000:5000"
     links:

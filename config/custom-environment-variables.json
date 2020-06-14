@@ -1,0 +1,16 @@
+{
+    "app": {
+        "port": "APP_PORT"
+    },
+    "db": {
+        "authRequired": "DB_AUTH_REQUIRED",
+        "host": "DB_HOST",
+        "username": "DB_USER",
+        "password": "DB_PASSWORD",
+        "dbName": "DB_NAME",
+        "connectOpts": "DB_CONNECT_OPTS"
+    },
+    "logging": {
+        "level": "LOG_LEVEL"
+    }
+}

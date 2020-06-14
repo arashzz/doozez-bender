@@ -1,21 +1,28 @@
-const loggingConfig = require('config').get('logging'),
-    { createLogger, transports, format } = require('winston'),
-    { combine, timestamp } = format
+const { createLogger, format, transports } = require('winston')
 
-const logger = createLogger({
-    level: loggingConfig.level,
-    exitOnError: loggingConfig.exitOnError,
-    format: combine(
-        timestamp(),
-        format.splat(),
-        format.json()
-    ),
-    transports: [
-      new transports.Console() 
-    ],
-    exceptionHandlers: [
-        new transports.Console() 
-    ]
-  });
+const {
+    combine,
+    timestamp
+} = format
 
-exports.logger = logger
+const loggingConfig = require('config').get('logging')
+
+function loggerFactory() {
+    return createLogger({
+        level: loggingConfig.level,
+        exitOnError: loggingConfig.exitOnError,
+        format: combine(
+            timestamp(),
+            format.splat(),
+            format.json()
+        ),
+        transports: [
+          new transports.Console() 
+        ],
+        exceptionHandlers: [
+            new transports.Console() 
+        ]
+    })
+}
+
+module.exports = loggerFactory

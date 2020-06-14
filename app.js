@@ -1,23 +1,20 @@
-require('./core/repository/db-client').connect()
-require("./core/service/subscribe-manager").init()
-
+const injectionManager = require('./core/service/injection-manager')
 const express = require("express"),
     bodyParser = require("body-parser"),
-    transactionRoutes = require("./rest/route/transaction-route"),
-    jobRoutes = require("./rest/route/job-route"),
-    appConfig = require('config').get('app'),
-    logger = require('./core/service/logger-service').logger
+    appConfig = require('config').get('app')
 
-logger.info('>>>>> node env is %s', process.env.NODE_ENV)
 let app = express();
 app.use(bodyParser.urlencoded({ extended: true }))
 app.use(bodyParser.json())
 
+const container = injectionManager.get(app)
 
+container.cradle.jobRoute
+container.cradle.transactionRoute
+container.cradle.commodityRoute
 
-app.use("/api", transactionRoutes)
-app.use("/api", jobRoutes)
-
-app.listen(appConfig.port, function () {
-    logger.info(">>>>>>> Doozez is running on port " + appConfig.port);
+let server = app.listen(appConfig.port, function () {
+    console.log(">>>>>>> Doozez is running on port " + appConfig.port);
 });
+
+module.exports = server

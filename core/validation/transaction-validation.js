@@ -1,42 +1,83 @@
-const moment = require('moment'),
-    transactionSubProvider = require("../provider/transaction-subject-provider"),
-    logger = require('../service/logger-service').logger
+const { RESOLVER, Lifetime, InjectionMode } = require('awilix')
 
-exports.subscribe = function() {
-    transactionSubProvider.validationSubject().subscribe({
-        next: (model) => validateCreationModel(model)
-    })
-    logger.log('debug', 'subscribed to subject [validationSubject]')
+class TransactionValidation {
+    constructor({ logger, subjectProvider, transactionEnum }) {
+        this.logger = logger
+        this.subjectProvider = subjectProvider
+        this.transactionEnum = transactionEnum
+        this.namespace = 'core.validation.transaction-validation'
+        this.subscribe()
+    }
+    subscribe() {
+        this.subjectProvider.transaction.validatePost().subscribe({
+            next: (dataModel) => this.validateCreateModel(dataModel)
+        })
+        this.logger.log('debug', '<%s> subscribed to subject [subjectProvider.transaction.validatePost]', this.namespace)
+        
+        this.subjectProvider.transaction.validateGet().subscribe({
+            next: (dataModel) => this.validateQueryModel(dataModel)
+        })
+        this.logger.log('debug', '<%s> subscribed to subject [subjectProvider.transaction.validateGet]', this.namespace)
+    }
+    unsubscribe() {
+        this.subjectProvider.transaction.validatePost().unsubscribe()
+        this.logger.log('debug', '<%s> unsubscribed to subject [subjectProvider.transaction.validatePost]', this.namespace)
+        
+        this.subjectProvider.transaction.validateGet().unsubscribe()
+        this.logger.log('debug', '<%s> unsubscribed to subject [subjectProvider.transaction.validateGet]', this.namespace)
+    }
+    validateQueryModel(dataModel) {
+        this.logger.log('debug', '<%s.validateQueryModel> is called with dataModel %s', this.namespace, dataModel.data)
+        let errors = []
+    
+        if(errors.length == 0) {
+            this.subjectProvider.transaction.createFilter().next(dataModel)
+        }
+        else {
+            dataModel.result = errors
+            dataModel.isError = true
+            this.subjectProvider.job.updateResult().next(dataModel)
+        }
+    }
+    validateCreateModel(dataModel) {
+        this.logger.log('debug', '<%s.validateCreateModel> is called with dataModel %s', this.namespace, dataModel.data)
+        let errors = []
+        if(!dataModel.data) {
+            errors.push("transaction is null")
+        }
+        if(!dataModel.data.username) {
+            errors.push("username cannot be empty")
+        }
+        if(!dataModel.data.type) {
+            errors.push("transaction type cannot be empty")
+        }
+        else if(dataModel.data.type != this.transactionEnum.type.DEBIT && dataModel.data.type != this.transactionEnum.type.CREDIT) {
+            errors.push(`transaction type is invalid. Only [${this.transactionEnum.type.DEBIT}] and [${this.transactionEnum.type.CREDIT}] are supported`)
+        }
+
+        if(!dataModel.data.commodity) {
+            errors.push("commodity cannot be empty")
+        }
+        if(!dataModel.data.amount || isNaN(dataModel.data.amount) || dataModel.data.amount <= 0) {
+            errors.push("transaction amount is invalid")
+        }
+        if(!dataModel.data.is_priodic && !dataModel.data.transactionDate) {
+            errors.push("transaction date is required for non-priodic transactions")
+        }
+        if(errors.length == 0) {
+            this.subjectProvider.transaction.insert().next(dataModel)
+        }
+        else {
+            dataModel.result = errors
+            dataModel.isError = true
+            this.subjectProvider.job.updateResult().next(dataModel)
+        }
+    }
 }
 
-function validateCreationModel(model) {
-    logger.log('debug', 'validateCreationModel with model %', model)
-    let data = model.data
-    logger.log('debug', 'validating data %', data)
-    model.validation = {
-        result: true,
-        reason: []
-    }
-    if(!data) {
-        model.validation.result = false
-        model.validation.reason.push("transaction model is null")
-    }
-    if(!data.commodityId) {
-        model.validation.result = false
-        model.validation.reason.push("commodity cannot be empty")
-    }
-    if(!data.amount || isNaN(data.amount) || data.amount <= 0) {
-        model.validation.result = false
-        model.validation.reason.push("transaction amount is invalid")
-    }
-    if(!data.transactionDate || !moment(data.transactionDate, "yyyy-MM-dd").isValid()) {
-        model.validation.result = false
-        model.validation.reason.push("transaction date is invalid")
-    }
-    if(model.validation.result) {
-        transactionSubProvider.validatedSubject().next(model)
-    }
-    else {
-        transactionSubProvider.validatedSubject().error(model)
-    }
+module.exports = TransactionValidation
+
+TransactionValidation[RESOLVER] = {
+    lifetime: Lifetime.SINGLETON,
+    injectionMode: InjectionMode.PROXY
 }

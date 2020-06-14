@@ -1,8 +1,13 @@
 {
     "db": {
-        "host": "mongodb://mongo:27017/"
+        "authRequired": true,
+        "dbName": "bender",
+        "host": "doozez-dev-i2m6o.gcp.mongodb.net",
+        "username": "bender",
+        "password": "Bender123",
+        "connectOpts": "retryWrites=true&w=majority"
     },
     "logging": {
-        "level": "info"
+        "level": "debug"
     }
 }
