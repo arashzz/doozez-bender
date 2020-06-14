@@ -22,7 +22,8 @@ class TransactionRoute {
             transaction.amount = req.body.amount
             transaction.username = req.body.username
             transaction.transactionDate = req.body.transactionDate
-            transaction.commodityId = req.body.commodityId
+            transaction.commodity = req.body.commodity
+            transaction.type = req.body.type
         }
         let jobCreationModel = {
             job: this.jobService.getRawJob(),

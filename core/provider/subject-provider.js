@@ -13,11 +13,13 @@ let job_create
 let job_run_task
 let job_updateResult
 let job_update
+let test
 
 class SubjectProvider {
     constructor({ logger }) {
         this.namespace = 'core.provider.subject-provider'
 
+        test = new Rx.Subject()
         transaction_validate_post = new Rx.Subject()
         transaction_validate_get = new Rx.Subject()
         transaction_insert = new Rx.Subject()
@@ -32,7 +34,6 @@ class SubjectProvider {
         job_update = new Rx.Subject()
         logger.log('debug', '<%s> all subjects are initialized', this.namespace)
     }
-
     transaction = {
         validatePost: function() {
             return transaction_validate_post

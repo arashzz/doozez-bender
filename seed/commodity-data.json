@@ -1,0 +1,128 @@
+[
+    {
+        "name": "Household Goods and Services",
+        "has_priodic": true,
+        "external_id": "1",
+        "is_debit": true,
+        "is_credit": false
+    },
+    {
+        "name": "Medical Products Appliances and Equipments",
+        "has_priodic": false,
+        "external_id": "2",
+        "is_debit": true,
+        "is_credit": false
+    },
+    {
+        "name": "Hospital Services",
+        "has_priodic": false,
+        "external_id": "3",
+        "is_debit": true,
+        "is_credit": false
+    },
+    {
+        "name": "Transport",
+        "has_priodic": true,
+        "external_id": "4",
+        "is_debit": true,
+        "is_credit": false
+    },
+    {
+        "name": "Recreation and Culture",
+        "has_priodic": false,
+        "external_id": "5",
+        "is_debit": true,
+        "is_credit": false
+    },
+    {
+        "name": "Education",
+        "has_priodic": true,
+        "external_id": "6",
+        "is_debit": true,
+        "is_credit": false
+    },
+    {
+        "name": "Restaurant",
+        "has_priodic": false,
+        "external_id": "7",
+        "is_debit": true,
+        "is_credit": false
+    },
+    {
+        "name": "Hotel",
+        "has_priodic": false,
+        "external_id": "8",
+        "is_debit": true,
+        "is_credit": false
+    },
+    {
+        "name": "Food & non-Alcoholic Drinks",
+        "has_priodic": false,
+        "external_id": "9",
+        "is_debit": true,
+        "is_credit": false
+    },
+    {
+        "name": "Alcoholic Drinks",
+        "has_priodic": false,
+        "external_id": "10",
+        "is_debit": true,
+        "is_credit": false
+    },
+    {
+        "name": "Tabacco and Narcatics",
+        "has_priodic": false,
+        "external_id": "11",
+        "is_debit": true,
+        "is_credit": false
+    },
+    {
+        "name": "Clothing & Footwear",
+        "has_priodic": false,
+        "external_id": "12",
+        "is_debit": true,
+        "is_credit": false
+    },
+    {
+        "name": "Housing",
+        "has_priodic": true,
+        "external_id": "13",
+        "is_debit": true,
+        "is_credit": false
+    },
+    {
+        "name": "Electricity, Gas & Other Fuels",
+        "has_priodic": true,
+        "external_id": "14",
+        "is_debit": true,
+        "is_credit": false
+    },
+    {
+        "name": "Beauty & Personal Care",
+        "has_priodic": false,
+        "external_id": "15",
+        "is_debit": true,
+        "is_credit": false
+    },
+    {
+        "name": "Insurance",
+        "has_priodic": true,
+        "external_id": "16",
+        "is_debit": true,
+        "is_credit": false
+    },
+    {
+        "name": "Mortgage & Council Tax",
+        "has_priodic": true,
+        "external_id": "17",
+        "is_debit": true,
+        "is_credit": false
+    },
+    {
+        "name": "Income",
+        "has_priodic": true,
+        "external_id": "18",
+        "is_debit": false,
+        "is_credit": true
+    }
+]

@@ -1,11 +1,12 @@
 const { from } = require('rxjs'),
-    { RESOLVER, Lifetime, InjectionMode } = require('awilix') 
+    { RESOLVER, Lifetime, InjectionMode } = require('awilix')
 
 class JobRepositoryMock {
-    constructor({ logger, subjectProvider }) {
-        this.namespace = 'core.repository.job-repository'
+    constructor({ logger, subjectProvider, dbClient }) {
+        this.namespace = 'core.repository.job-repository-mock'
         this.logger = logger
         this.subjectProvider = subjectProvider
+        this.dbClient = dbClient
         this.subscribe()
     }
     subscribe() {
@@ -20,13 +21,21 @@ class JobRepositoryMock {
         this.logger.log('debug', '<%s> subscribed to subject [subjectProvider.job.update]', this.namespace)
     }
     insert(jobCreationModel) {
-        
+        let collection = this.dbClient.getCollection('job')
+        collection.push(jobCreationModel.job)
+        this.subjectProvider.job.runTask().next(jobCreationModel)
     }
     update(updateQuery) {
-        
+        let collection = this.dbClient.getCollection('job')
+        let job = collection.find(job => job.id = updateQuery.filter.id)
+        job.status = updateQuery.update.$set.status
+        job.result = updateQuery.update.$set.result
+        job.updatedAt = updateQuery.update.$set.updatedAt
     }
     find(filter) {
-        
+        let collection = this.dbClient.getCollection('job')
+        let job = collection.find(job => job.id = filter.id)
+        return from([job])
     }
 }
 

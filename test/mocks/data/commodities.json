@@ -1,0 +1,16 @@
+[
+    {
+        "name": "Household Goods and Services",
+        "has_priodic": true,
+        "is_debit": true,
+        "is_credit": false,
+        "external_id": "1"
+    },
+    {
+        "name": "Medical Products Appliances and Equipments",
+        "has_priodic": false,
+        "is_debit": true,
+        "is_credit": false,
+        "external_id": "2"
+    }
+]

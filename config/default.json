@@ -3,10 +3,12 @@
         "port": 5000
     },
     "db": {
+        "authRequired": true,
         "host": "mongodb://localhost:27017/",
-        "user": "",
+        "username": "",
         "password": "",
-        "dbName": "doozezTransaction"
+        "dbName": "bender",
+        "connectOpts": ""
     },
     "logging": {
         "level": "debug",

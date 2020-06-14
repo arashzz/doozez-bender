@@ -13,8 +13,16 @@ class DbClient {
         this.connect()
     }
     connect() {
-        this.logger.info('connecting to database...')
-        from(mongo.connect(this.config.host + this.config.dbName)).subscribe({
+        let dbUrl = 'mongodb+srv://'
+        if(this.config.authRequired) {
+            dbUrl += `${this.config.username}:${this.config.password}@`
+        } 
+        dbUrl += `${this.config.host}/${this.config.dbName}`
+        if(this.config.connectOpts) {
+            dbUrl += this.config.connectOpts
+        }
+        this.logger.info('connecting to database [%s] ...', this.config.host)
+        from(mongo.connect(dbUrl)).subscribe({
             next: client => {
                 this.logger.info('connected to database successfully')
                 this._db = client.db(this.config.dbName)

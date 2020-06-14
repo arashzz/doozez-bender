@@ -1,54 +1,38 @@
-const jobEnum = require('../enum/job-enums'),
-    uuid = require("uuid")
+const jobEnum = require('../enum/job-enums')
     
 const { RESOLVER, Lifetime, InjectionMode } = require('awilix')
     
-
 class JobService {
-    constructor({ logger, subjectProvider, jobRepository }) {
+    constructor({ logger, subjectProvider, jobRepository, uuid }) {
         this.logger = logger
         this.subjectProvider = subjectProvider
         this.jobRepository = jobRepository
+        this.uuid = uuid
         this.namespace = 'core.service.job-service'
+        this.subscriptions = {}
         this.subscribe()
     }
     subscribe() {
-        //job subscriptions
-        this.subjectProvider.job.runTask().subscribe({
+        this.subscriptions['subjectProvider.job.runTask'] = this.subjectProvider.job.runTask().subscribe({
             next: (jobCreationModel) => this.runTask(jobCreationModel)
         })
         this.logger.log('debug', '<%s> subscribed to [subjectProvider.job.runTask]', this.namespace)
 
-        this.subjectProvider.job.updateResult().subscribe({
-            next: (dataModel) => this.update(dataModel, true)
+        this.subscriptions['subjectProvider.job.updateResult'] = this.subjectProvider.job.updateResult().subscribe({
+            next: (dataModel) => this.update(dataModel, dataModel.isError)
         })
         this.logger.log('debug', '<%s> subscribed to [subjectProvider.job.updateResult]', this.namespace)
-
-        //transaction subscriptions
-        this.subjectProvider.transaction.validateGet().subscribe({
-            error: (dataModel) => this.update(dataModel, false)
-        })
-        this.logger.log('debug', '<%s> subscribed to [subjectProvider.transaction.validateGet]', this.namespace)
-
-        this.subjectProvider.transaction.validatePost().subscribe({
-            error: (dataModel) => this.update(dataModel, false)
-        })
-        this.logger.log('debug', '<%s> subscribed to [subjectProvider.transaction.validatePost]', this.namespace)
-    
-        this.subjectProvider.transaction.insert().subscribe({
-            error: (dataModel) => this.update(dataModel, false)
-        })
-        this.logger.log('debug', '<%s> subscribed to [subjectProvider.transaction.insert]', this.namespace)
-    
-        this.subjectProvider.transaction.find().subscribe({
-            error: (dataModel) => this.update(dataModel, false)
-        })
-        this.logger.log('debug', '<%s> subscribed to [subjectProvider.transaction.find]', this.namespace)
+    }
+    unsubscribe() {
+        for(let key in this.subscriptions) {
+            this.subscriptions[key].unsubscribe()
+            this.logger.log('debug', '<%s> unsubscribed to [%s]', this.namespace, key)
+        }
     }
     getRawJob() {
         //TODO: map 
         return {
-            id: uuid.v4(),
+            id: this.uuid.v4(),
             status: jobEnum.status.IN_PROGRESS,
             result: undefined,
             createdAt: new Date().getTime(),
@@ -63,20 +47,16 @@ class JobService {
             data: jobCreationModel.task.data
         })
     }
-    update(dataModel, success) {
-        this.logger.log('debug', '<%s.update> is called with status of %s for job id %s', 
-            this.namespace, success, dataModel.jobId)
-        let status = jobEnum.status.SUCCESS
-        if(!success) {
-            status = jobEnum.status.FAILED
-        }
+    update(dataModel, isError) {
+        this.logger.log('debug', '<%s.update> is called with isError of %s for job id %s', 
+            this.namespace, isError, dataModel.jobId)
         this.subjectProvider.job.update().next({
             filter: {
                 id: dataModel.jobId
             },
             update: {
                 $set: {
-                    status: status,
+                    status: isError == true? jobEnum.status.FAILED: jobEnum.status.SUCCESS,
                     result: dataModel.result,
                     updatedAt: new Date().getTime()
                 }    

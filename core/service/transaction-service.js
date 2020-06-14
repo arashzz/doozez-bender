@@ -4,34 +4,44 @@ const { from } = require('rxjs'),
 const { RESOLVER, Lifetime, InjectionMode } = require('awilix')
 
 class TransactionService {
-    constructor({ logger, subjectProvider }) {
+    constructor({ logger, subjectProvider, transactionEnum }) {
         this.namespace = 'core.service.transaction-service'
         this.logger = logger
         this.subjectProvider = subjectProvider
+        this.transactionEnum = transactionEnum
+        this.subscriptions = {}
         this.subscribe()
     }
     subscribe() {
-        this.subjectProvider.transaction.enrich().subscribe({
+        this.subscriptions['transaction.enrich'] = this.subjectProvider.transaction.enrich().subscribe({
             next: (dataModel) => this.enrichTransaction(dataModel)
         })
         this.logger.log('debug', '<%s> subscribed to subject [subjectProvider.transaction.enrich]', this.namespace)
     
-        this.subjectProvider.transaction.enrichList().subscribe({
+        this.subscriptions['transaction.enrichList'] = this.subjectProvider.transaction.enrichList().subscribe({
             next: (dataModel) => this.enrichTransactions(dataModel)
         })
         this.logger.log('debug', '<%s> subscribed to subject [subjectProvider.transaction.enrichList]', this.namespace)
     
-        this.subjectProvider.transaction.createFilter().subscribe({
+        this.subscriptions['transaction.createFilter'] = this.subjectProvider.transaction.createFilter().subscribe({
             next: (dataModel) => this.createFilter(dataModel)
         })
         this.logger.log('debug', '<%s> subscribed to subject [subjectProvider.transaction.createFilter]', this.namespace)
+    }
+    unsubscribe() {
+        for(let key in this.subscriptions) {
+            this.subscriptions[key].unsubscribe()
+            this.logger.log('debug', '<%s> unsubscribed to [%s]', this.namespace, key)
+        }
     }
     getRawTransaction() {
         return {
             username: undefined,
             amount: undefined,
             transactionDate: undefined,
-            commodityId: undefined,
+            commodity: undefined,
+            type: undefined,
+            is_priodic: false,
             createdAt: new Date().getTime(),
             updatedAt: new Date().getTime()
         }
@@ -45,7 +55,7 @@ class TransactionService {
             }
         }
         if(dataModel.data.commodityId) {
-            filter.commodityId = commodityId
+            filter['commodity.external_id'] = { $eq: dataModel.data.commodityId }
         }
         dataModel.data = filter
         this.subjectProvider.transaction.find().next(dataModel)
@@ -66,8 +76,9 @@ class TransactionService {
     toApiModel(transaction) {
         return {
             amount: transaction.amount,
+            type: transaction.type,
             transactionDate: transaction.transactionDate,
-            commodityId: transaction.commodityId
+            commodity: transaction.commodity
         }
     }
 }

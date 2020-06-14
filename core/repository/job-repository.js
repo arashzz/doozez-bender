@@ -8,18 +8,25 @@ class JobRepository {
         this.logger = logger
         this.dbClient = dbClient
         this.subjectProvider = subjectProvider
+        this.subscriptions = {}
         this.subscribe()
     }
     subscribe() {
-        this.subjectProvider.job.create().subscribe({
+        this.subscriptions['job.create'] = this.subjectProvider.job.create().subscribe({
             next: (jobCreationModel) => this.insert(jobCreationModel)
         })
         this.logger.log('debug', '<%s> subscribed to subject [subjectProvider.job.create]', this.namespace)
     
-        this.subjectProvider.job.update().subscribe({
+        this.subscriptions['job.update'] = this.subjectProvider.job.update().subscribe({
             next: (updateQuery) => this.update(updateQuery)
         })
         this.logger.log('debug', '<%s> subscribed to subject [subjectProvider.job.update]', this.namespace)
+    }
+    unsubscribe() {
+        for(let key in this.subscriptions) {
+            this.subscriptions[key].unsubscribe()
+            this.logger.log('debug', '<%s> unsubscribed to [%s]', this.namespace, key)
+        }
     }
     insert(jobCreationModel) {
         this.logger.log('debug', '<%s.insert> is called with model %s', this.namespace, jobCreationModel.job)
@@ -50,8 +57,8 @@ class JobRepository {
                     this.namespace, JSON.stringify(updateQuery.filter), JSON.stringify(updateQuery.update))
                 }
                 else if(result.ok == 1 && !result.lastErrorObject.updatedExisting) {
-                    this.logger.error('<%s..update> inserted the job as new while should have updated an existing job with filter %s', 
-                    this.namespace, JSON.stringify(updateQuery.filter), JSON.stringify(updateQuery.filter))
+                    this.logger.error('<%s.update> inserted the job as new while should have updated an existing job with filter %s', 
+                    this.namespace, JSON.stringify(updateQuery.filter))
                 }
             },
             error: error => {
